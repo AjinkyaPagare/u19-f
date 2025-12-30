@@ -120,3 +120,96 @@ button.sent {
   margin-top: 5px;
   font-size: 0.9rem;
 }
+
+/* Mode Selection */
+.mode-button {
+  width: 100%;
+  padding: 30px;
+  margin-bottom: 20px;
+  background: white;
+  border: 3px solid #ddd;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.mode-button:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+}
+
+.sender-btn {
+  border-color: #007bff;
+}
+
+.sender-btn:hover {
+  background: #e7f1ff;
+  border-color: #0056b3;
+}
+
+.receiver-btn {
+  border-color: #28a745;
+}
+
+.receiver-btn:hover {
+  background: #e7f8ec;
+  border-color: #1e7e34;
+}
+
+/* Room Code Display */
+.room-code-display {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 25px;
+  border-radius: 16px;
+  text-align: center;
+  color: white;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+/* Messages Area */
+.messages-area {
+  background: white;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.messages-list {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.message-item {
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  border-left: 4px solid #28a745;
+}
+
+.message-time {
+  font-size: 0.75rem;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.message-text {
+  font-size: 1rem;
+  color: #333;
+  word-wrap: break-word;
+}
+
+/* Back Button */
+.back-button {
+  background: #6c757d !important;
+  margin-top: 20px;
+}
+
+.back-button:hover {
+  background: #5a6268 !important;
+}
+
