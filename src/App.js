@@ -5,7 +5,7 @@ import './App.css';
 function App() {
     const [mode, setMode] = useState(null); // 'sender' or 'receiver'
     const [text, setText] = useState('');
-    const backendUrl = 'https://u19.onrender.com';
+    const backendUrl = 'https://u19-backend-production.up.railway.app';
 
     // Sender: generates room code
     const [roomCode, setRoomCode] = useState('');
