@@ -136,7 +136,7 @@ function App() {
     if (!mode) {
         return (
             <div className="App mode-selection">
-                <div className="header">🔒 Secure Text Sync</div>
+                <div className="header">🔒 U19</div>
                 <div className="container">
                     <h2 style={{ color: '#007bff', marginBottom: '30px' }}>Choose Your Mode</h2>
 
