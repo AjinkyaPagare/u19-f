@@ -19,6 +19,7 @@ function App() {
     const [receivedMessages, setReceivedMessages] = useState([]);
 
     const socketRef = useRef(null);
+    const textareaRef = useRef(null); // Ref to keep keyboard open
 
     // Generate 6-digit room code for sender
     const generateRoomCode = () => {
@@ -89,6 +90,13 @@ function App() {
         setIsSent(true);
         setText('');
         setTimeout(() => setIsSent(false), 1000);
+
+        // KEEP KEYBOARD OPEN - Refocus textarea immediately
+        setTimeout(() => {
+            if (textareaRef.current) {
+                textareaRef.current.focus();
+            }
+        }, 100);
     };
 
     // Mode selection screen
@@ -148,9 +156,15 @@ function App() {
 
                     <div className="input-area">
                         <textarea
+                            ref={textareaRef}
                             placeholder="Type your message here..."
                             value={text}
                             onChange={(e) => setText(e.target.value)}
+                            autoFocus
+                            onBlur={(e) => {
+                                // Prevent keyboard from closing on mobile
+                                setTimeout(() => e.target.focus(), 0);
+                            }}
                         />
                         <button
                             onClick={sendText}
