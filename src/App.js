@@ -89,14 +89,13 @@ function App() {
 
         setIsSent(true);
         setText('');
-        setTimeout(() => setIsSent(false), 1000);
 
-        // KEEP KEYBOARD OPEN - Refocus textarea immediately
-        setTimeout(() => {
-            if (textareaRef.current) {
-                textareaRef.current.focus();
-            }
-        }, 100);
+        // KEEP KEYBOARD OPEN - Refocus IMMEDIATELY before keyboard can close
+        if (textareaRef.current) {
+            textareaRef.current.focus();
+        }
+
+        setTimeout(() => setIsSent(false), 1000);
     };
 
     // Mode selection screen
@@ -161,15 +160,20 @@ function App() {
                             value={text}
                             onChange={(e) => setText(e.target.value)}
                             autoFocus
-                            onBlur={(e) => {
-                                // Prevent keyboard from closing on mobile
-                                setTimeout(() => e.target.focus(), 0);
-                            }}
                         />
                         <button
                             onClick={sendText}
                             className={isSent ? 'sent' : ''}
                             disabled={!connected}
+                            onMouseDown={(e) => {
+                                // Prevent button from stealing focus
+                                e.preventDefault();
+                            }}
+                            onTouchStart={(e) => {
+                                // Prevent keyboard close on mobile
+                                e.preventDefault();
+                                sendText();
+                            }}
                         >
                             {isSent ? <span>Sent! ✅</span> : <span>Send Securely 🚀</span>}
                         </button>
