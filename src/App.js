@@ -44,11 +44,24 @@ function App() {
             socketRef.current = io(backendUrl);
 
             socketRef.current.on('connect', () => {
-                setConnected(true);
+                console.log('Socket connected, joining room...');
+                // DON'T set connected=true yet! Wait for room_joined
                 socketRef.current.emit('join_room', { code: code, type: deviceType });
             });
 
+            // ONLY set connected after room join confirmation
+            socketRef.current.on('room_joined', (data) => {
+                console.log('Room joined successfully!', data);
+                setConnected(true);
+            });
+
             socketRef.current.on('disconnect', () => {
+                console.log('Socket disconnected');
+                setConnected(false);
+            });
+
+            socketRef.current.on('connect_error', (error) => {
+                console.error('Connection error:', error);
                 setConnected(false);
             });
 
