@@ -368,30 +368,210 @@ button:disabled {
   font-size: 0.95rem;
 }
 
-/* Responsive */
+/* Responsive - PERFECT MOBILE UI */
 @media (max-width: 600px) {
+  body {
+    background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  }
+
   .container {
-    margin: 20px;
-    padding: 24px;
+    margin: 15px;
+    padding: 20px;
+    max-width: 100%;
   }
 
-  .room-code-display {
-    font-size: 2.8rem;
-    letter-spacing: 6px;
+  /* Logo */
+  .logo-circle {
+    width: 80px;
+    height: 80px;
+    font-size: 0.8rem;
+    margin-bottom: 15px;
   }
 
-  .room-code-input {
-    font-size: 2rem !important;
-  }
-
+  /* Mode Selection - Vertical Stack */
   .mode-selection {
     flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
   }
 
+  .mode-button {
+    padding: 24px 18px;
+    font-size: 1rem;
+    min-height: 100px;
+  }
+
+  /* Status Badge */
+  .status-badge {
+    padding: 6px 14px;
+    font-size: 0.8rem;
+  }
+
+  /* Room Code Card - Mobile Optimized */
+  .room-code-card {
+    padding: 30px 20px;
+    margin-bottom: 20px;
+  }
+
+  .room-code-label {
+    font-size: 0.75rem;
+    margin-bottom: 12px;
+  }
+
+  /* LARGE Room Code Display for Mobile */
+  .room-code-display {
+    font-size: 3rem !important;
+    letter-spacing: 6px;
+    line-height: 1.2;
+    word-break: break-all;
+  }
+
+  /* Room Code Input - Mobile Friendly */
+  .room-code-input {
+    font-size: 2.2rem !important;
+    padding: 18px 12px;
+    letter-spacing: 6px;
+    width: 100%;
+  }
+
+  /* Input Fields - Larger Touch Targets */
+  input[type="text"],
+  input[type="number"],
+  textarea {
+    font-size: 1.1rem;
+    padding: 16px 20px;
+    border-radius: 10px;
+  }
+
+  /* Buttons - Mobile Touch Optimized */
+  button {
+    font-size: 1.1rem;
+    padding: 16px 32px;
+    border-radius: 10px;
+    min-height: 50px;
+    width: 100%;
+  }
+
+  /* Header - Mobile Layout */
   .header {
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     text-align: center;
+    padding: 20px 15px;
+  }
+
+  .header-title {
+    font-size: 1.2rem;
+  }
+
+  .connected-badge {
+    font-size: 0.7rem;
+    padding: 5px 12px;
+  }
+
+  /* Messages Section - Mobile */
+  .messages-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .messages-title {
+    font-size: 1.2rem;
+  }
+
+  .message-count {
+    font-size: 0.85rem;
+    padding: 3px 10px;
+  }
+
+  .clear-button {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    align-self: stretch;
+  }
+
+  /* Messages Area - Mobile Height */
+  .messages-area {
+    padding: 18px;
+    max-height: 350px;
+    margin-bottom: 15px;
+  }
+
+  .message-item {
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+  }
+
+  .message-time {
+    font-size: 0.7rem;
+    margin-bottom: 5px;
+  }
+
+  .message-text {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  /* Back Button - Mobile */
+  .back-button {
+    padding: 12px 24px;
+    margin-top: 20px;
+    font-size: 1rem;
+  }
+
+  /* Paste Indicator - Mobile */
+  .paste-indicator {
+    font-size: 0.9rem;
+    padding: 10px;
+    margin-top: 12px;
+  }
+
+  /* Reduce Container Margins on Very Small Screens */
+  @media (max-width: 400px) {
+    .container {
+      margin: 10px;
+      padding: 15px;
+    }
+
+    .room-code-display {
+      font-size: 2.5rem !important;
+      letter-spacing: 4px;
+    }
+
+    .room-code-input {
+      font-size: 1.8rem !important;
+      letter-spacing: 4px;
+    }
+
+    button {
+      font-size: 1rem;
+      padding: 14px 24px;
+    }
+  }
+
+  /* Landscape Orientation - Phones */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .container {
+      margin: 10px;
+      padding: 15px;
+    }
+
+    .logo-circle {
+      width: 60px;
+      height: 60px;
+      margin-bottom: 10px;
+    }
+
+    .room-code-display {
+      font-size: 2.5rem !important;
+    }
+
+    .messages-area {
+      max-height: 250px;
+    }
   }
 }
 
