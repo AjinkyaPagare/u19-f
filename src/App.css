@@ -10,14 +10,25 @@ body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
   min-height: 100vh;
+  min-height: -webkit-fill-available;
+  /* Fix for iOS Safari */
   overflow-x: hidden;
+  position: relative;
+}
+
+html {
+  height: -webkit-fill-available;
+  /* Fix for iOS Safari */
 }
 
 .App {
   min-height: 100vh;
+  min-height: -webkit-fill-available;
+  /* Fix for iOS Safari */
   display: flex;
   flex-direction: column;
   animation: fadeIn 0.6s ease-in;
+  position: relative;
 }
 
 @keyframes fadeIn {
@@ -203,6 +214,17 @@ textarea {
   font-family: inherit;
   background: #f8fafc;
   color: #1e293b;
+  -webkit-appearance: none;
+  /* Remove iOS styling */
+  appearance: none;
+}
+
+/* Textarea specific - better mobile keyboard handling */
+textarea {
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.6;
+  max-height: 300px;
 }
 
 input[type="text"]:focus,
@@ -212,6 +234,9 @@ textarea:focus {
   border-color: #3b82f6;
   background: white;
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  position: relative;
+  z-index: 10;
+  /* Ensure it stays on top when keyboard opens */
 }
 
 .room-code-input {
@@ -571,6 +596,54 @@ button:disabled {
 
     .messages-area {
       max-height: 250px;
+    }
+  }
+
+  /* MOBILE KEYBOARD FIX */
+  /* Prevent layout break when keyboard opens */
+  .container {
+    position: relative;
+    overflow: visible;
+  }
+
+  /* Keep textarea and button visible when keyboard opens */
+  textarea {
+    position: relative;
+    z-index: 100;
+    background: white !important;
+    margin-bottom: 12px;
+  }
+
+  button[type="submit"],
+  button.send-button {
+    position: relative;
+    z-index: 100;
+    margin-bottom: 20px;
+  }
+
+  /* Ensure scrolling works with keyboard open */
+  body.keyboard-open {
+    position: fixed;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  /* iOS Safari specific fixes */
+  @supports (-webkit-touch-callout: none) {
+    body {
+      min-height: -webkit-fill-available;
+      position: relative;
+    }
+
+    .container {
+      padding-bottom: 40px;
+    }
+
+    /* Keep input visible when keyboard opens */
+    input:focus,
+    textarea:focus {
+      position: relative;
+      z-index: 1000;
     }
   }
 }
