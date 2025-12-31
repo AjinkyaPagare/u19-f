@@ -45,14 +45,30 @@ function App() {
 
             socketRef.current.on('connect', () => {
                 console.log('Socket connected, joining room...');
-                // DON'T set connected=true yet! Wait for room_joined
+                // DON'T set connected=true yet! Wait for room status
                 socketRef.current.emit('join_room', { code: code, type: deviceType });
             });
 
-            // ONLY set connected after room join confirmation
+            // ONLY set connected when room is ACTIVE (both sender & receiver present)
             socketRef.current.on('room_joined', (data) => {
-                console.log('Room joined successfully!', data);
-                setConnected(true);
+                console.log('Room joined:', data);
+
+                if (data.room_active) {
+                    console.log('✅ Room is ACTIVE - both participants present');
+                    setConnected(true);
+                } else {
+                    console.log('⏳ Waiting for other participant...');
+                    console.log(`Has sender: ${data.has_sender}, Has receiver: ${data.has_receiver}`);
+                    setConnected(false);  // NOT connected until both are there
+                }
+            });
+
+            // Room becomes active when other participant joins
+            socketRef.current.on('room_status', (data) => {
+                console.log('Room status updated:', data);
+                if (data.status === 'active') {
+                    setConnected(true);
+                }
             });
 
             socketRef.current.on('disconnect', () => {
@@ -62,6 +78,11 @@ function App() {
 
             socketRef.current.on('connect_error', (error) => {
                 console.error('Connection error:', error);
+                setConnected(false);
+            });
+
+            socketRef.current.on('error', (error) => {
+                console.error('Socket error:', error);
                 setConnected(false);
             });
 
