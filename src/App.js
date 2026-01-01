@@ -247,9 +247,16 @@ function App() {
                     <div className="input-area">
                         <textarea
                             ref={textareaRef}
-                            placeholder="Type your message here..."
+                            placeholder="Type your message here... (Press Enter to send, Shift+Enter for new line)"
                             value={text}
                             onChange={(e) => setText(e.target.value)}
+                            onKeyDown={(e) => {
+                                // Press Enter to send (Shift+Enter for new line)
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault(); // Prevent new line
+                                    sendText();
+                                }
+                            }}
                             autoFocus
                         />
                         <button
