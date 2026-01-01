@@ -173,6 +173,63 @@ html {
   color: #10b981;
 }
 
+/* Status Bar */
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #94a3b8;
+  animation: pulse 2s infinite;
+}
+
+.status-dot.connected {
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+.status-dot.waiting {
+  background: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.status-bar span {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.status-bar .status-dot.connected+span {
+  color: #10b981;
+}
+
+.status-bar .status-dot.waiting+span {
+  color: #f59e0b;
+}
+
+
 /* Room Code Card */
 .room-code-card {
   background: white;

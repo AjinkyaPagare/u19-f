@@ -15,11 +15,13 @@ function App() {
     const [joined, setJoined] = useState(false);
 
     const [connected, setConnected] = useState(false);
+    const [isWaiting, setIsWaiting] = useState(false); // NEW: Track waiting state
     const [isSent, setIsSent] = useState(false);
     const [receivedMessages, setReceivedMessages] = useState([]);
 
     const socketRef = useRef(null);
     const textareaRef = useRef(null); // Ref to keep keyboard open
+    const connectionTimeoutRef = useRef(null); // Track connection timeout
 
     // Generate 6-digit room code for sender
     const generateRoomCode = () => {
@@ -56,10 +58,12 @@ function App() {
                 if (data.room_active) {
                     console.log('✅ Room is ACTIVE - both participants present');
                     setConnected(true);
+                    setIsWaiting(false);
                 } else {
                     console.log('⏳ Waiting for other participant...');
                     console.log(`Has sender: ${data.has_sender}, Has receiver: ${data.has_receiver}`);
                     setConnected(false);  // NOT connected until both are there
+                    setIsWaiting(true);   // Show waiting status
                 }
             });
 
@@ -68,6 +72,16 @@ function App() {
                 console.log('Room status updated:', data);
                 if (data.status === 'active') {
                     setConnected(true);
+                    setIsWaiting(false);
+                    // Clear timeout if room becomes active
+                    if (connectionTimeoutRef.current) {
+                        clearTimeout(connectionTimeoutRef.current);
+                        connectionTimeoutRef.current = null;
+                    }
+                } else if (data.status === 'sender_left') {
+                    setConnected(false);
+                    setIsWaiting(false);
+                    alert('⚠️ Sender has left the room.\n\nYou can view existing messages but cannot receive new ones.');
                 }
             });
 
@@ -108,6 +122,18 @@ function App() {
         }
         setJoined(true);
         connectSocket(inputRoomCode, 'receiver');
+
+        // Set 30-second timeout for connection
+        connectionTimeoutRef.current = setTimeout(() => {
+            if (!connected) {
+                alert('⚠️ Connection timeout\n\nRoom not found or sender is offline.\n\nPlease check the room code and try again.');
+                setJoined(false);
+                setInputRoomCode('');
+                if (socketRef.current) {
+                    socketRef.current.disconnect();
+                }
+            }
+        }, 30000);
     };
 
     const sendText = () => {
@@ -170,8 +196,12 @@ function App() {
                 <div className="container">
 
                     <div className="status-bar">
-                        <div className={`status-dot ${connected ? 'connected' : ''}`}></div>
-                        <span>{connected ? 'Connected' : 'Connecting...'}</span>
+                        <div className={`status-dot ${connected ? 'connected' : (isWaiting ? 'waiting' : '')}`}></div>
+                        <span>
+                            {connected ? '✅ Connected - Receiver Online' :
+                                isWaiting ? '⏳ Waiting for Receiver...' :
+                                    'Connecting...'}
+                        </span>
                     </div>
 
                     {/* Room Code Display */}
@@ -185,6 +215,33 @@ function App() {
                         <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '10px' }}>
                             Share this code with receiver
                         </div>
+                        <button
+                            onClick={() => {
+                                navigator.clipboard.writeText(roomCode);
+                                const btn = document.activeElement;
+                                const originalText = btn.textContent;
+                                btn.textContent = '✅ Copied!';
+                                btn.style.backgroundColor = '#28a745';
+                                setTimeout(() => {
+                                    btn.textContent = originalText;
+                                    btn.style.backgroundColor = '#007bff';
+                                }, 1500);
+                            }}
+                            style={{
+                                marginTop: '15px',
+                                padding: '10px 25px',
+                                fontSize: '14px',
+                                fontWeight: 'bold',
+                                backgroundColor: '#007bff',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s'
+                            }}
+                        >
+                            📋 Copy Code
+                        </button>
                     </div>
 
                     <div className="input-area">
@@ -288,8 +345,12 @@ function App() {
                 <div className="container">
 
                     <div className="status-bar">
-                        <div className={`status-dot ${connected ? 'connected' : ''}`}></div>
-                        <span>{connected ? `Connected to Room ${inputRoomCode}` : 'Connecting...'}</span>
+                        <div className={`status-dot ${connected ? 'connected' : (isWaiting ? 'waiting' : '')}`}></div>
+                        <span>
+                            {connected ? `✅ Connected to Room ${inputRoomCode}` :
+                                isWaiting ? '⏳ Waiting for Sender...' :
+                                    'Connecting...'}
+                        </span>
                     </div>
 
                     <div className="messages-area">
