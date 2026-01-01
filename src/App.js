@@ -14,10 +14,10 @@ function App() {
     const [inputRoomCode, setInputRoomCode] = useState('');
     const [joined, setJoined] = useState(false);
 
-    const [connected, setConnected] = useState(false);
     const [isWaiting, setIsWaiting] = useState(false); // NEW: Track waiting state
     const [isSent, setIsSent] = useState(false);
     const [receivedMessages, setReceivedMessages] = useState([]);
+    const [showPrivacy, setShowPrivacy] = useState(false); // NEW: Privacy Policy Toggle
 
     const socketRef = useRef(null);
     const textareaRef = useRef(null); // Ref to keep keyboard open
@@ -159,40 +159,66 @@ function App() {
     };
 
     // Mode selection screen
-    if (!mode) {
-        return (
-            <div className="App mode-selection">
-                <div className="header">🔒 U19</div>
-                <div className="container">
-                    <h2 style={{ color: '#007bff', marginBottom: '30px' }}>Choose Your Mode</h2>
+    <div className="App mode-selection">
+        <div className="header">🔒 U19</div>
+        <div className="container">
+            <h2 style={{ color: '#007bff', marginBottom: '30px' }}>Sender & Receiver</h2>
 
-                    <button
-                        className="mode-button sender-btn"
-                        onClick={() => setMode('sender')}
-                    >
-                        <div style={{ fontSize: '48px' }}>📤</div>
-                        <div style={{ fontSize: '20px', fontWeight: 'bold' }}>Sender</div>
-                        <div style={{ fontSize: '14px', opacity: 0.8 }}>Send text to receiver</div>
-                    </button>
+            <button
+                className="mode-button sender-btn"
+                onClick={() => setMode('sender')}
+            >
+                <div style={{ fontSize: '48px' }}>📤</div>
+                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>U19 Sender</div>
+                <div style={{ fontSize: '14px', opacity: 0.8 }}>Send text securely</div>
+            </button>
 
-                    <button
-                        className="mode-button receiver-btn"
-                        onClick={() => setMode('receiver')}
-                    >
-                        <div style={{ fontSize: '48px' }}>📥</div>
-                        <div style={{ fontSize: '20px', fontWeight: 'bold' }}>Receiver</div>
-                        <div style={{ fontSize: '14px', opacity: 0.8 }}>Receive text messages</div>
-                    </button>
+            <button
+                className="mode-button receiver-btn"
+                onClick={() => setMode('receiver')}
+            >
+                <div style={{ fontSize: '48px' }}>📥</div>
+                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>U19 Receiver</div>
+                <div style={{ fontSize: '14px', opacity: 0.8 }}>Receive text messages</div>
+            </button>
+
+            <div style={{ marginTop: '40px', textAlign: 'center' }}>
+                <button
+                    onClick={() => setShowPrivacy(true)}
+                    style={{
+                        background: 'transparent',
+                        color: '#64748b',
+                        fontSize: '12px',
+                        textDecoration: 'underline',
+                        padding: '10px'
+                    }}
+                >
+                    Privacy Policy
+                </button>
+            </div>
+        </div>
+
+        {showPrivacy && (
+            <div className="modal-overlay" onClick={() => setShowPrivacy(false)}>
+                <div className="modal-content" onClick={e => e.stopPropagation()}>
+                    <h3>Privacy Policy</h3>
+                    <div className="policy-text">
+                        <p><strong>1. Introduction</strong>: U19 is a secure text transfer utility. No personal data is collected or shared.</p>
+                        <p><strong>2. Data Handling</strong>: All text transfers are encrypted in transit and kept in memory only. We do not store any message history on our servers.</p>
+                        <p><strong>3. Security</strong>: Rooms are temporary and expire after interaction. We use real-time socket communication for direct delivery.</p>
+                        <p><strong>4. Third Parties</strong>: We do not share data with any third parties.</p>
+                    </div>
+                    <button onClick={() => setShowPrivacy(false)}>Close</button>
                 </div>
             </div>
-        );
-    }
+        )}
+    </div>
 
     // Sender Mode
     if (mode === 'sender') {
         return (
             <div className="App">
-                <div className="header">📤 Secure Sender</div>
+                <div className="header">📤 U19 Sender</div>
                 <div className="container">
 
                     <div className="status-bar">
@@ -297,7 +323,7 @@ function App() {
         if (!joined) {
             return (
                 <div className="App">
-                    <div className="header">📥 Secure Receiver</div>
+                    <div className="header">📥 U19 Receiver</div>
                     <div className="container">
                         <h3 style={{ color: '#28a745', marginBottom: '20px' }}>Enter Room Code</h3>
 
