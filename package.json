@@ -1,6 +1,7 @@
 {
-  "name": "text-sync-sender",
-  "version": "1.0.0",
+  "name": "u19-mobile",
+  "version": "1.3.0",
+  "homepage": "./",
   "private": true,
   "dependencies": {
     "@capacitor/android": "^8.0.0",

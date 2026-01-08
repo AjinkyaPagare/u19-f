@@ -8,13 +8,36 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#007bff" />
-    <meta name="description" content="U19 - Secure Text Sync" />
+    <meta name="description" content="U19 - Secure Transfer" />
     <title>U19</title>
+    <script>
+        // Critical: Catch generic startup errors
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
+            var string = msg.toLowerCase();
+            var substring = "script error";
+            if (string.indexOf(substring) > -1) {
+                alert('Script Error: See Browser Console for Detail');
+            } else {
+                var message = [
+                    'Message: ' + msg,
+                    'URL: ' + url,
+                    'Line: ' + lineNo,
+                    'Column: ' + columnNo,
+                    'Error object: ' + JSON.stringify(error)
+                ].join(' - ');
+                alert(message);
+            }
+            return false;
+        };
+        console.log("U19 Mobile Starting...");
+    </script>
 </head>
 
 <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+    <div id="root" style="color: black; padding: 20px; font-weight: bold;">
+        Loading U19...
+    </div>
 </body>
 
 </html>

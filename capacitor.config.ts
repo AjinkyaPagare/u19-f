@@ -2,11 +2,12 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.u19.textsync',
-  appName: 'U19 Sender',
+  appName: 'U19',
   webDir: 'build',
   server: {
-    androidScheme: 'https',
-    cleartext: true
+    androidScheme: 'http',
+    cleartext: true,
+    allowNavigation: ['*']
   },
   android: {
     buildOptions: {

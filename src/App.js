@@ -3,7 +3,14 @@ import io from 'socket.io-client';
 import './App.css';
 
 function App() {
-    const [mode, setMode] = useState(null); // 'sender' or 'receiver'
+    const [mode, setMode] = useState('selection'); // Default to selection, avoid null
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    // Safety check for mounting
     const [text, setText] = useState('');
     const backendUrl = 'https://u19-backend-production.up.railway.app';
 
@@ -13,6 +20,7 @@ function App() {
     // Receiver: enters room code
     const [inputRoomCode, setInputRoomCode] = useState('');
     const [joined, setJoined] = useState(false);
+    const [connected, setConnected] = useState(false); // Fixed: Added missing state
 
     const [isWaiting, setIsWaiting] = useState(false); // NEW: Track waiting state
     const [isSent, setIsSent] = useState(false);
@@ -39,11 +47,50 @@ function App() {
         };
     }, [mode]);
 
+    // BACKGROUND PERSISTENCE: Handle app resume / visibility change
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                console.log('App active - verifying connection...');
+                if (socketRef.current) {
+                    if (!socketRef.current.connected) {
+                        console.log('⚠️ Reconnecting socket immediately...');
+                        socketRef.current.connect();
+                    } else {
+                        // Send heartbeat to ensure link is truly alive
+                        socketRef.current.emit('ping_keepalive');
+                    }
+                }
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
+
+    // HEARTBEAT: Keep connection active
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (socketRef.current && socketRef.current.connected) {
+                // Lightweight packet to keep transport open
+                socketRef.current.emit('ping_keepalive');
+            }
+        }, 25000); // 25s (under typical 60s timeout)
+        return () => clearInterval(interval);
+    }, []);
+
     const connectSocket = (code, deviceType) => {
         if (socketRef.current) socketRef.current.disconnect();
 
         try {
-            socketRef.current = io(backendUrl);
+            socketRef.current = io(backendUrl, {
+                reconnection: true,
+                reconnectionAttempts: Infinity,
+                reconnectionDelay: 1000,
+                reconnectionDelayMax: 5000,
+                timeout: 20000,
+                autoConnect: true,
+                transports: ['websocket', 'polling']
+            });
 
             socketRef.current.on('connect', () => {
                 console.log('Socket connected, joining room...');
@@ -79,9 +126,10 @@ function App() {
                         connectionTimeoutRef.current = null;
                     }
                 } else if (data.status === 'sender_left') {
+                    // Do NOT disconnect. Just show waiting status.
+                    console.log('Sender left - waiting for return');
                     setConnected(false);
-                    setIsWaiting(false);
-                    alert('⚠️ Sender has left the room.\n\nYou can view existing messages but cannot receive new ones.');
+                    setIsWaiting(true);
                 }
             });
 
@@ -123,17 +171,8 @@ function App() {
         setJoined(true);
         connectSocket(inputRoomCode, 'receiver');
 
-        // Set 30-second timeout for connection
-        connectionTimeoutRef.current = setTimeout(() => {
-            if (!connected) {
-                alert('⚠️ Connection timeout\n\nRoom not found or sender is offline.\n\nPlease check the room code and try again.');
-                setJoined(false);
-                setInputRoomCode('');
-                if (socketRef.current) {
-                    socketRef.current.disconnect();
-                }
-            }
-        }, 30000);
+        // Timeout removed for persistent connection
+        // connectionTimeoutRef.current = setTimeout(...)
     };
 
     const sendText = () => {
@@ -158,67 +197,74 @@ function App() {
         setTimeout(() => setIsSent(false), 1000);
     };
 
+    // Safety check for mounting - placed AFTER all hooks
+    if (!isMounted) return <div style={{ padding: 20 }}>Loading Interface...</div>;
+
     // Mode selection screen
-    <div className="App mode-selection">
-        <div className="header">🔒 U19</div>
-        <div className="container">
-            <h2 style={{ color: '#007bff', marginBottom: '30px' }}>Sender & Receiver</h2>
+    if (mode === 'selection' || mode === null) {
+        return (
+            <div className="App mode-selection">
+                <div className="header">🔒 U19</div>
+                <div className="container">
+                    <h2 style={{ color: '#007bff', marginBottom: '30px' }}>U19 Secure</h2>
 
-            <button
-                className="mode-button sender-btn"
-                onClick={() => setMode('sender')}
-            >
-                <div style={{ fontSize: '48px' }}>📤</div>
-                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>U19 Sender</div>
-                <div style={{ fontSize: '14px', opacity: 0.8 }}>Send text securely</div>
-            </button>
+                    <button
+                        className="mode-button sender-btn"
+                        onClick={() => setMode('sender')}
+                    >
+                        <div style={{ fontSize: '48px' }}>📤</div>
+                        <div style={{ fontSize: '20px', fontWeight: 'bold' }}>Send</div>
+                        <div style={{ fontSize: '14px', opacity: 0.8 }}>Securely send data</div>
+                    </button>
 
-            <button
-                className="mode-button receiver-btn"
-                onClick={() => setMode('receiver')}
-            >
-                <div style={{ fontSize: '48px' }}>📥</div>
-                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>U19 Receiver</div>
-                <div style={{ fontSize: '14px', opacity: 0.8 }}>Receive text messages</div>
-            </button>
+                    <button
+                        className="mode-button receiver-btn"
+                        onClick={() => setMode('receiver')}
+                    >
+                        <div style={{ fontSize: '48px' }}>📥</div>
+                        <div style={{ fontSize: '20px', fontWeight: 'bold' }}>Receive</div>
+                        <div style={{ fontSize: '14px', opacity: 0.8 }}>Securely receive data</div>
+                    </button>
 
-            <div style={{ marginTop: '40px', textAlign: 'center' }}>
-                <button
-                    onClick={() => setShowPrivacy(true)}
-                    style={{
-                        background: 'transparent',
-                        color: '#64748b',
-                        fontSize: '12px',
-                        textDecoration: 'underline',
-                        padding: '10px'
-                    }}
-                >
-                    Privacy Policy
-                </button>
-            </div>
-        </div>
-
-        {showPrivacy && (
-            <div className="modal-overlay" onClick={() => setShowPrivacy(false)}>
-                <div className="modal-content" onClick={e => e.stopPropagation()}>
-                    <h3>Privacy Policy</h3>
-                    <div className="policy-text">
-                        <p><strong>1. Introduction</strong>: U19 is a secure text transfer utility. No personal data is collected or shared.</p>
-                        <p><strong>2. Data Handling</strong>: All text transfers are encrypted in transit and kept in memory only. We do not store any message history on our servers.</p>
-                        <p><strong>3. Security</strong>: Rooms are temporary and expire after interaction. We use real-time socket communication for direct delivery.</p>
-                        <p><strong>4. Third Parties</strong>: We do not share data with any third parties.</p>
+                    <div style={{ marginTop: '40px', textAlign: 'center' }}>
+                        <button
+                            onClick={() => setShowPrivacy(true)}
+                            style={{
+                                background: 'transparent',
+                                color: '#64748b',
+                                fontSize: '12px',
+                                textDecoration: 'underline',
+                                padding: '10px'
+                            }}
+                        >
+                            Privacy Policy
+                        </button>
                     </div>
-                    <button onClick={() => setShowPrivacy(false)}>Close</button>
                 </div>
+
+                {showPrivacy && (
+                    <div className="modal-overlay" onClick={() => setShowPrivacy(false)}>
+                        <div className="modal-content" onClick={e => e.stopPropagation()}>
+                            <h3>Privacy Policy</h3>
+                            <div className="policy-text">
+                                <p><strong>1. Introduction</strong>: U19 is a secure text transfer utility. No personal data is collected or shared.</p>
+                                <p><strong>2. Data Handling</strong>: All text transfers are encrypted in transit and kept in memory only. We do not store any message history on our servers.</p>
+                                <p><strong>3. Security</strong>: Rooms are temporary and expire after interaction. We use real-time socket communication for direct delivery.</p>
+                                <p><strong>4. Third Parties</strong>: We do not share data with any third parties.</p>
+                            </div>
+                            <button onClick={() => setShowPrivacy(false)}>Close</button>
+                        </div>
+                    </div>
+                )}
             </div>
-        )}
-    </div>
+        );
+    }
 
     // Sender Mode
     if (mode === 'sender') {
         return (
             <div className="App">
-                <div className="header">📤 U19 Sender</div>
+                <div className="header">📤 U19</div>
                 <div className="container">
 
                     <div className="status-bar">
@@ -323,7 +369,7 @@ function App() {
         if (!joined) {
             return (
                 <div className="App">
-                    <div className="header">📥 U19 Receiver</div>
+                    <div className="header">📥 U19</div>
                     <div className="container">
                         <h3 style={{ color: '#28a745', marginBottom: '20px' }}>Enter Room Code</h3>
 
@@ -363,7 +409,7 @@ function App() {
 
                         <button
                             className="back-button"
-                            onClick={() => setMode(null)}
+                            onClick={() => setMode('selection')}
                         >
                             ← Change Mode
                         </button>
@@ -407,7 +453,7 @@ function App() {
                     <button
                         className="back-button"
                         onClick={() => {
-                            setMode(null);
+                            setMode('selection');
                             setJoined(false);
                             setInputRoomCode('');
                             if (socketRef.current) socketRef.current.disconnect();
