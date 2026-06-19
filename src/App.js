@@ -88,7 +88,7 @@ function App() {
             socketRef.current.on('room_status', (data) => {
                 if (data.status === 'active') {
                     setConnected(true);
-                } else if (data.status === 'sender_left' || data.status === 'receiver_left') {
+                } else {
                     setConnected(false);
                 }
             });
