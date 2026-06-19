@@ -107,6 +107,16 @@ function App() {
         return () => clearInterval(interval);
     }, []);
 
+    // Typing Controls State
+    const [typingMode, setTypingMode] = useState('paste'); // 'paste' or 'type'
+    const [typingSpeed, setTypingSpeed] = useState(0.05);
+    const [typingState, setTypingState] = useState({
+        active: false,
+        paused: false,
+        progress: 0,
+        total: 0
+    });
+
     const connectSocket = (code, deviceType) => {
         if (socketRef.current) socketRef.current.disconnect();
 
@@ -118,45 +128,35 @@ function App() {
                 reconnectionDelayMax: 5000,
                 timeout: 20000,
                 autoConnect: true,
-                transports: ['websocket']
+                transports: ['websocket', 'polling']
             });
 
             socketRef.current.on('connect', () => {
                 console.log('Socket connected, joining room...');
-                // DON'T set connected=true yet! Wait for room status
                 socketRef.current.emit('join_room', { code: code, type: deviceType });
             });
 
-            // ONLY set connected when room is ACTIVE (both sender & receiver present)
             socketRef.current.on('room_joined', (data) => {
                 console.log('Room joined:', data);
-
                 if (data.room_active) {
-                    console.log('✅ Room is ACTIVE - both participants present');
                     setConnected(true);
                     setIsWaiting(false);
                 } else {
-                    console.log('⏳ Waiting for other participant...');
-                    console.log(`Has sender: ${data.has_sender}, Has receiver: ${data.has_receiver}`);
-                    setConnected(false);  // NOT connected until both are there
-                    setIsWaiting(true);   // Show waiting status
+                    setConnected(false);
+                    setIsWaiting(true);
                 }
             });
 
-            // Room becomes active when other participant joins
             socketRef.current.on('room_status', (data) => {
                 console.log('Room status updated:', data);
                 if (data.status === 'active') {
                     setConnected(true);
                     setIsWaiting(false);
-                    // Clear timeout if room becomes active
                     if (connectionTimeoutRef.current) {
                         clearTimeout(connectionTimeoutRef.current);
                         connectionTimeoutRef.current = null;
                     }
                 } else if (data.status === 'sender_left') {
-                    // Do NOT disconnect. Just show waiting status.
-                    console.log('Sender left - waiting for return');
                     setConnected(false);
                     setIsWaiting(true);
                 }
@@ -167,14 +167,20 @@ function App() {
                 setConnected(false);
             });
 
-            socketRef.current.on('connect_error', (error) => {
-                console.error('Connection error:', error);
-                setConnected(false);
-            });
-
-            socketRef.current.on('error', (error) => {
-                console.error('Socket error:', error);
-                setConnected(false);
+            socketRef.current.on('typing_progress', (data) => {
+                if (deviceType === 'sender') {
+                    setTypingState(prev => {
+                        const newProgress = data.index;
+                        const isDone = newProgress >= data.total;
+                        return {
+                            ...prev,
+                            progress: newProgress,
+                            total: data.total,
+                            active: !isDone,
+                            paused: isDone ? false : prev.paused
+                        };
+                    });
+                }
             });
 
             if (deviceType === 'receiver') {
@@ -199,31 +205,61 @@ function App() {
         }
         setJoined(true);
         connectSocket(inputRoomCode, 'receiver');
-
-        // Timeout removed for persistent connection
-        // connectionTimeoutRef.current = setTimeout(...)
     };
 
     const sendText = () => {
         if (!text || !socketRef.current) return;
 
-        const data = {
-            text: text,
-            timestamp: new Date().toISOString(),
-            code: roomCode
-        };
-
-        socketRef.current.emit('send_text', data);
+        if (typingMode === 'type') {
+            socketRef.current.emit('typing_command', {
+                action: 'start',
+                code: roomCode,
+                text: text,
+                speed: typingSpeed
+            });
+            setTypingState({
+                active: true,
+                paused: false,
+                progress: 0,
+                total: text.length
+            });
+        } else {
+            const data = {
+                text: text,
+                timestamp: new Date().toISOString(),
+                code: roomCode
+            };
+            socketRef.current.emit('send_text', data);
+        }
 
         setIsSent(true);
-        setText('');
-
-        // KEEP KEYBOARD OPEN - Refocus IMMEDIATELY before keyboard can close
-        if (textareaRef.current) {
-            textareaRef.current.focus();
+        // We do NOT clear the text in auto-type mode immediately so they can see what's typing
+        if (typingMode === 'paste') {
+            setText('');
+            if (textareaRef.current) textareaRef.current.focus();
         }
 
         setTimeout(() => setIsSent(false), 1000);
+    };
+
+    const controlTyping = (action) => {
+        if (!socketRef.current) return;
+        socketRef.current.emit('typing_command', { action, code: roomCode, speed: typingSpeed });
+        
+        if (action === 'pause') setTypingState(prev => ({ ...prev, paused: true }));
+        if (action === 'play') setTypingState(prev => ({ ...prev, paused: false }));
+        if (action === 'stop') {
+            setTypingState(prev => ({ ...prev, active: false }));
+            setText('');
+        }
+    };
+
+    const handleSpeedChange = (e) => {
+        const val = parseFloat(e.target.value);
+        setTypingSpeed(val);
+        if (typingState.active) {
+            socketRef.current.emit('typing_command', { action: 'speed', code: roomCode, speed: val });
+        }
     };
 
     // Safety check for mounting - placed AFTER all hooks
@@ -345,38 +381,91 @@ function App() {
                         </button>
                     </div>
 
-                    <div className="input-area">
-                        <textarea
-                            ref={textareaRef}
-                            placeholder="Type your message here... (Press Enter to send, Shift+Enter for new line)"
-                            value={text}
-                            onChange={(e) => setText(e.target.value)}
-                            onKeyDown={(e) => {
-                                // Press Enter to send (Shift+Enter for new line)
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault(); // Prevent new line
-                                    sendText();
-                                }
-                            }}
-                            autoFocus
-                        />
-                        <button
-                            onClick={sendText}
-                            className={isSent ? 'sent' : ''}
-                            disabled={!connected}
-                            onMouseDown={(e) => {
-                                // Prevent button from stealing focus
-                                e.preventDefault();
-                            }}
-                            onTouchStart={(e) => {
-                                // Prevent keyboard close on mobile
-                                e.preventDefault();
-                                sendText();
-                            }}
-                        >
-                            {isSent ? <span>Sent! ✅</span> : <span>Send Securely 🚀</span>}
-                        </button>
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                        <button 
+                            onClick={() => setTypingMode('paste')}
+                            style={{ flex: 1, padding: '10px', borderRadius: '5px', border: '1px solid #ccc', background: typingMode === 'paste' ? '#007bff' : 'white', color: typingMode === 'paste' ? 'white' : 'black' }}
+                        >⚡ Instant Paste</button>
+                        <button 
+                            onClick={() => setTypingMode('type')}
+                            style={{ flex: 1, padding: '10px', borderRadius: '5px', border: '1px solid #ccc', background: typingMode === 'type' ? '#007bff' : 'white', color: typingMode === 'type' ? 'white' : 'black' }}
+                        >⌨️ Live Auto-Type</button>
                     </div>
+
+                    {!typingState.active ? (
+                        <div className="input-area">
+                            <textarea
+                                ref={textareaRef}
+                                placeholder="Type your message here... (Press Enter to send)"
+                                value={text}
+                                onChange={(e) => setText(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        sendText();
+                                    }
+                                }}
+                                autoFocus
+                            />
+                            
+                            {typingMode === 'type' && (
+                                <div style={{marginTop: '10px', marginBottom: '10px'}}>
+                                    <label style={{display: 'block', fontSize: '14px', marginBottom: '5px'}}>Typing Speed: {typingSpeed}s / char</label>
+                                    <input 
+                                        type="range" 
+                                        min="0.005" 
+                                        max="0.5" 
+                                        step="0.005" 
+                                        value={typingSpeed} 
+                                        onChange={handleSpeedChange}
+                                        style={{width: '100%'}}
+                                    />
+                                    <div style={{display:'flex', justifyContent:'space-between', fontSize:'12px', color:'#666'}}>
+                                        <span>Fast</span>
+                                        <span>Slow</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            <button
+                                onClick={sendText}
+                                className={isSent ? 'sent' : ''}
+                                disabled={!connected}
+                            >
+                                {isSent ? <span>Started! ✅</span> : <span>{typingMode === 'paste' ? 'Send & Paste 🚀' : 'Start Typing ⌨️'}</span>}
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="typing-control-panel" style={{ background: '#f8f9fa', padding: '20px', borderRadius: '10px', border: '2px solid #007bff', marginTop: '20px' }}>
+                            <h3 style={{marginTop: 0, color: '#007bff'}}>⌨️ Live Auto-Typing</h3>
+                            <div style={{ background: '#e9ecef', borderRadius: '5px', height: '20px', overflow: 'hidden', marginBottom: '10px' }}>
+                                <div style={{ background: '#28a745', height: '100%', width: `${(typingState.progress / typingState.total) * 100}%`, transition: 'width 0.2s' }}></div>
+                            </div>
+                            <p style={{textAlign: 'center', fontSize: '14px', margin: '5px 0 15px'}}>
+                                Typed: {typingState.progress} / {typingState.total} characters
+                            </p>
+
+                            <div style={{display: 'flex', gap: '10px', marginBottom: '20px'}}>
+                                {typingState.paused ? (
+                                    <button onClick={() => controlTyping('play')} style={{flex: 1, padding: '15px', background: '#28a745', color: 'white', border: 'none', borderRadius: '5px', fontSize:'18px'}}>▶️ Resume</button>
+                                ) : (
+                                    <button onClick={() => controlTyping('pause')} style={{flex: 1, padding: '15px', background: '#ffc107', color: 'black', border: 'none', borderRadius: '5px', fontSize:'18px'}}>⏸️ Pause</button>
+                                )}
+                                <button onClick={() => controlTyping('stop')} style={{flex: 1, padding: '15px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', fontSize:'18px'}}>⏹️ Stop</button>
+                            </div>
+
+                            <label style={{display: 'block', fontSize: '14px', marginBottom: '5px'}}>Adjust Speed: {typingSpeed}s / char</label>
+                            <input 
+                                type="range" 
+                                min="0.005" 
+                                max="0.5" 
+                                step="0.005" 
+                                value={typingSpeed} 
+                                onChange={handleSpeedChange}
+                                style={{width: '100%'}}
+                            />
+                        </div>
+                    )}
 
                     <button
                         className="back-button"
