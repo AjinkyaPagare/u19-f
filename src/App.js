@@ -184,63 +184,119 @@ function App() {
                 <div className="navbar-brand">U19<span className="brand-dot">.</span></div>
                 <div className="navbar-status">
                     <div className={`status-indicator ${connected ? 'status-connected' : 'status-waiting'}`}></div>
-                    <span className="status-text">{connected ? 'Connected' : 'Waiting for Receiver'}</span>
+                    <span className="status-text">{connected ? `Connected: ${roomCode}` : 'Waiting for Receiver'}</span>
                 </div>
             </nav>
 
             <main className="main-content">
-                <div className="room-card">
-                    <p className="room-label">SECURE ROOM CODE</p>
-                    <h1 className="room-code">{roomCode}</h1>
-                    <div className="room-actions">
-                        <button 
-                            className="btn-secondary"
-                            onClick={() => {
-                                navigator.clipboard.writeText(roomCode);
-                                const btn = document.activeElement;
-                                const original = btn.textContent;
-                                btn.textContent = 'Copied!';
-                                setTimeout(() => btn.textContent = original, 1500);
-                            }}
-                        >
-                            Copy Code
-                        </button>
-                        <button className="btn-secondary btn-outline" onClick={resetRoom}>
-                            New Room
-                        </button>
+                {!connected ? (
+                    <div className="room-card">
+                        <p className="room-label">SECURE ROOM CODE</p>
+                        <h1 className="room-code">{roomCode}</h1>
+                        <div className="room-actions">
+                            <button 
+                                className="btn-secondary"
+                                onClick={() => {
+                                    navigator.clipboard.writeText(roomCode);
+                                    const btn = document.activeElement;
+                                    const original = btn.textContent;
+                                    btn.textContent = 'Copied!';
+                                    setTimeout(() => btn.textContent = original, 1500);
+                                }}
+                            >
+                                Copy Code
+                            </button>
+                            <button className="btn-secondary btn-outline" onClick={resetRoom}>
+                                New Room
+                            </button>
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="transmission-card">
+                        <div className="mode-toggle">
+                            <button 
+                                className={`toggle-btn ${typingMode === 'paste' ? 'active' : ''}`}
+                                onClick={() => setTypingMode('paste')}
+                            >
+                                Instant Paste
+                            </button>
+                            <button 
+                                className={`toggle-btn ${typingMode === 'type' ? 'active' : ''}`}
+                                onClick={() => setTypingMode('type')}
+                            >
+                                Live Auto-Type
+                            </button>
+                        </div>
 
-                <div className="transmission-card">
-                    <div className="mode-toggle">
-                        <button 
-                            className={`toggle-btn ${typingMode === 'paste' ? 'active' : ''}`}
-                            onClick={() => setTypingMode('paste')}
-                        >
-                            Instant Paste
-                        </button>
-                        <button 
-                            className={`toggle-btn ${typingMode === 'type' ? 'active' : ''}`}
-                            onClick={() => setTypingMode('type')}
-                        >
-                            Live Auto-Type
-                        </button>
-                    </div>
+                        {!typingState.active ? (
+                            <div className="input-section">
+                                <textarea
+                                    ref={textareaRef}
+                                    className="main-textarea"
+                                    placeholder="Enter your text here to transmit securely..."
+                                    value={text}
+                                    onChange={(e) => setText(e.target.value)}
+                                />
+                                
+                                {typingMode === 'type' && (
+                                    <div className="speed-controller">
+                                        <div className="speed-header">
+                                            <label>Typing Speed</label>
+                                            <span className="speed-value">{currentCPS >= 5000 ? 'MAX' : currentCPS} CPS</span>
+                                        </div>
+                                        <input 
+                                            type="range" 
+                                            min="0" 
+                                            max="10" 
+                                            step="1" 
+                                            value={typingSpeedIndex} 
+                                            onChange={handleSpeedChange}
+                                            className="modern-slider"
+                                        />
+                                    </div>
+                                )}
 
-                    {!typingState.active ? (
-                        <div className="input-section">
-                            <textarea
-                                ref={textareaRef}
-                                className="main-textarea"
-                                placeholder="Enter your text here to transmit securely..."
-                                value={text}
-                                onChange={(e) => setText(e.target.value)}
-                            />
-                            
-                            {typingMode === 'type' && (
-                                <div className="speed-controller">
+                                <button
+                                    className={`btn-primary ${isSent ? 'btn-success' : ''}`}
+                                    onClick={sendText}
+                                    disabled={!connected || !text}
+                                >
+                                    {isSent ? 'Transmitting...' : (typingMode === 'paste' ? 'Send to Clipboard' : 'Start Auto-Typing')}
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="typing-active-section">
+                                <h3 className="typing-header">Transmission in Progress</h3>
+                                
+                                <div className="progress-container">
+                                    <div 
+                                        className="progress-bar" 
+                                        style={{ width: `${(typingState.progress / typingState.total) * 100}%` }}
+                                    ></div>
+                                </div>
+                                
+                                <p className="progress-text">
+                                    {typingState.progress} / {typingState.total} characters transmitted
+                                </p>
+
+                                <div className="control-buttons">
+                                    {typingState.paused ? (
+                                        <button className="btn-control btn-play" onClick={() => controlTyping('play')}>
+                                            Resume
+                                        </button>
+                                    ) : (
+                                        <button className="btn-control btn-pause" onClick={() => controlTyping('pause')}>
+                                            Pause
+                                        </button>
+                                    )}
+                                    <button className="btn-control btn-stop" onClick={() => controlTyping('stop')}>
+                                        Abort
+                                    </button>
+                                </div>
+
+                                <div className="speed-controller mt-4">
                                     <div className="speed-header">
-                                        <label>Typing Speed</label>
+                                        <label>Live Speed Adjustment</label>
                                         <span className="speed-value">{currentCPS >= 5000 ? 'MAX' : currentCPS} CPS</span>
                                     </div>
                                     <input 
@@ -252,69 +308,11 @@ function App() {
                                         onChange={handleSpeedChange}
                                         className="modern-slider"
                                     />
-                                    <div className="speed-labels">
-                                        <span>Slow</span>
-                                        <span>Fast</span>
-                                    </div>
                                 </div>
-                            )}
-
-                            <button
-                                className={`btn-primary ${isSent ? 'btn-success' : ''}`}
-                                onClick={sendText}
-                                disabled={!connected || !text}
-                            >
-                                {isSent ? 'Transmitting...' : (typingMode === 'paste' ? 'Send to Clipboard' : 'Start Auto-Typing')}
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="typing-active-section">
-                            <h3 className="typing-header">Transmission in Progress</h3>
-                            
-                            <div className="progress-container">
-                                <div 
-                                    className="progress-bar" 
-                                    style={{ width: `${(typingState.progress / typingState.total) * 100}%` }}
-                                ></div>
                             </div>
-                            
-                            <p className="progress-text">
-                                {typingState.progress} / {typingState.total} characters transmitted
-                            </p>
-
-                            <div className="control-buttons">
-                                {typingState.paused ? (
-                                    <button className="btn-control btn-play" onClick={() => controlTyping('play')}>
-                                        Resume
-                                    </button>
-                                ) : (
-                                    <button className="btn-control btn-pause" onClick={() => controlTyping('pause')}>
-                                        Pause
-                                    </button>
-                                )}
-                                <button className="btn-control btn-stop" onClick={() => controlTyping('stop')}>
-                                    Abort
-                                </button>
-                            </div>
-
-                            <div className="speed-controller mt-4">
-                                <div className="speed-header">
-                                    <label>Live Speed Adjustment</label>
-                                    <span className="speed-value">{currentCPS >= 5000 ? 'MAX' : currentCPS} CPS</span>
-                                </div>
-                                <input 
-                                    type="range" 
-                                    min="0" 
-                                    max="10" 
-                                    step="1" 
-                                    value={typingSpeedIndex} 
-                                    onChange={handleSpeedChange}
-                                    className="modern-slider"
-                                />
-                            </div>
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
+                )}
             </main>
 
             <footer className="footer">
