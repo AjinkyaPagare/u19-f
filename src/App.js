@@ -3,31 +3,51 @@ import io from 'socket.io-client';
 import './App.css';
 
 function App() {
-    const [mode, setMode] = useState('selection'); // Default to selection, avoid null
+    const [mode, setMode] = useState(() => localStorage.getItem('u19_mode') || 'selection');
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
-    // Safety check for mounting
     const [text, setText] = useState('');
     const backendUrl = 'https://u19-b-production.up.railway.app';
 
-    // Sender: generates room code
-    const [roomCode, setRoomCode] = useState('');
+    const [roomCode, setRoomCode] = useState(() => localStorage.getItem('u19_roomCode') || '');
+    const [inputRoomCode, setInputRoomCode] = useState(() => localStorage.getItem('u19_inputRoomCode') || '');
+    const [joined, setJoined] = useState(() => localStorage.getItem('u19_joined') === 'true');
+    const [connected, setConnected] = useState(false);
 
-    // Receiver: enters room code
-    const [inputRoomCode, setInputRoomCode] = useState('');
-    const [joined, setJoined] = useState(false);
-    const [connected, setConnected] = useState(false); // Fixed: Added missing state
-
-    const [isWaiting, setIsWaiting] = useState(false); // NEW: Track waiting state
+    const [isWaiting, setIsWaiting] = useState(false);
     const [isSent, setIsSent] = useState(false);
-    const [receivedMessages, setReceivedMessages] = useState([]);
-    const [showPrivacy, setShowPrivacy] = useState(false); // NEW: Privacy Policy Toggle
+    const [receivedMessages, setReceivedMessages] = useState(() => {
+        const saved = localStorage.getItem('u19_messages');
+        return saved ? JSON.parse(saved) : [];
+    });
+    const [showPrivacy, setShowPrivacy] = useState(false);
 
     const socketRef = useRef(null);
+
+    // Sync to localStorage
+    useEffect(() => { localStorage.setItem('u19_mode', mode || 'selection'); }, [mode]);
+    useEffect(() => { localStorage.setItem('u19_roomCode', roomCode); }, [roomCode]);
+    useEffect(() => { localStorage.setItem('u19_inputRoomCode', inputRoomCode); }, [inputRoomCode]);
+    useEffect(() => { localStorage.setItem('u19_joined', joined); }, [joined]);
+    useEffect(() => { localStorage.setItem('u19_messages', JSON.stringify(receivedMessages)); }, [receivedMessages]);
+
+    const resetState = () => {
+        setMode('selection');
+        setRoomCode('');
+        setInputRoomCode('');
+        setJoined(false);
+        setReceivedMessages([]);
+        localStorage.removeItem('u19_mode');
+        localStorage.removeItem('u19_roomCode');
+        localStorage.removeItem('u19_inputRoomCode');
+        localStorage.removeItem('u19_joined');
+        localStorage.removeItem('u19_messages');
+        if (socketRef.current) socketRef.current.disconnect();
+    };
     const textareaRef = useRef(null); // Ref to keep keyboard open
     const connectionTimeoutRef = useRef(null); // Track connection timeout
 
@@ -38,9 +58,18 @@ function App() {
 
     useEffect(() => {
         if (mode === 'sender') {
-            const code = generateRoomCode();
-            setRoomCode(code);
+            let code = localStorage.getItem('u19_roomCode');
+            if (!code) {
+                code = generateRoomCode();
+                setRoomCode(code);
+            }
             connectSocket(code, 'sender');
+        } else if (mode === 'receiver') {
+            const savedJoined = localStorage.getItem('u19_joined') === 'true';
+            const savedCode = localStorage.getItem('u19_inputRoomCode');
+            if (savedJoined && savedCode && savedCode.length === 6) {
+                connectSocket(savedCode, 'receiver');
+            }
         }
         return () => {
             if (socketRef.current) socketRef.current.disconnect();
@@ -351,10 +380,7 @@ function App() {
 
                     <button
                         className="back-button"
-                        onClick={() => {
-                            setMode(null);
-                            if (socketRef.current) socketRef.current.disconnect();
-                        }}
+                        onClick={resetState}
                     >
                         ← Change Mode
                     </button>
@@ -409,7 +435,7 @@ function App() {
 
                         <button
                             className="back-button"
-                            onClick={() => setMode('selection')}
+                            onClick={resetState}
                         >
                             ← Change Mode
                         </button>
@@ -452,12 +478,7 @@ function App() {
 
                     <button
                         className="back-button"
-                        onClick={() => {
-                            setMode('selection');
-                            setJoined(false);
-                            setInputRoomCode('');
-                            if (socketRef.current) socketRef.current.disconnect();
-                        }}
+                        onClick={resetState}
                     >
                         ← Leave Room
                     </button>
