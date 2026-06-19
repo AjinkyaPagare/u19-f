@@ -233,41 +233,16 @@ function App() {
                 </div>
                 <div className="navbar-status">
                     <div className={`status-indicator ${connected ? 'status-connected' : 'status-waiting'}`}></div>
-                    <span className="status-text">{connected ? `Connected: ${roomCode}` : 'Waiting for Receiver'}</span>
+                    <span className="status-text">{connected ? 'Secure Link Active' : 'Connecting...'}</span>
                 </div>
             </nav>
 
             <main className="main-content">
                 {currentView === 'home' ? (
-                    <div className="room-card">
-                        <p className="room-label">SECURE ROOM CODE</p>
-                        <h1 className="room-code">{roomCode}</h1>
-                        <div className="room-actions">
-                            <button 
-                                className="btn-secondary"
-                                onClick={() => {
-                                    navigator.clipboard.writeText(roomCode);
-                                    const btn = document.activeElement;
-                                    const original = btn.textContent;
-                                    btn.textContent = 'Copied!';
-                                    setTimeout(() => btn.textContent = original, 1500);
-                                }}
-                            >
-                                Copy Code
-                            </button>
-                            <button className="btn-secondary btn-outline" onClick={resetRoom}>
-                                New Room
-                            </button>
-                            {connected && (
-                                <button 
-                                    className="btn-primary" 
-                                    onClick={() => setCurrentView('tools')}
-                                    style={{ marginTop: '12px' }}
-                                >
-                                    Open Transmission Tools
-                                </button>
-                            )}
-                        </div>
+                    <div className="room-card" style={{ textAlign: 'center', padding: '40px' }}>
+                        <p className="room-label" style={{ letterSpacing: '1.5px', fontWeight: '600', color: '#6B7280' }}>SECURITY TUNNEL</p>
+                        <h2 style={{ color: '#111827', margin: '20px 0', fontSize: '20px', fontWeight: 'bold' }}>Establishing Connection...</h2>
+                        <p style={{ color: '#4B5563', fontSize: '14px', lineHeight: '1.5' }}>Awaiting secure desktop receiver authentication handshake.</p>
                     </div>
                 ) : (
                     <div className="transmission-card">
