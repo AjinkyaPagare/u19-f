@@ -181,7 +181,14 @@ function App() {
     return (
         <div className="app-container">
             <nav className="navbar">
-                <div className="navbar-brand">U19<span className="brand-dot">.</span></div>
+                <div 
+                    className="navbar-brand" 
+                    onClick={resetRoom}
+                    style={{ cursor: 'pointer' }}
+                    title="Click to Disconnect & Get New Room"
+                >
+                    U19<span className="brand-dot">.</span>
+                </div>
                 <div className="navbar-status">
                     <div className={`status-indicator ${connected ? 'status-connected' : 'status-waiting'}`}></div>
                     <span className="status-text">{connected ? `Connected: ${roomCode}` : 'Waiting for Receiver'}</span>
