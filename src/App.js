@@ -22,11 +22,11 @@ function App() {
 
     const [connected, setConnected] = useState(false);
     const [currentView, setCurrentView] = useState('home'); // 'home' or 'tools'
-    const [text, setText] = useState('');
+    const textRef = useRef(''); // Use ref instead of state to prevent massive re-render lag
     const [isSent, setIsSent] = useState(false);
     const [showPrivacy, setShowPrivacy] = useState(false);
 
-    // Auto-switch to tools view when connection is established, auto-switch to home when disconnected
+    // Auto-switch to tools view when connection is established
     useEffect(() => {
         if (connected) {
             setCurrentView('tools');
@@ -49,6 +49,7 @@ function App() {
 
     const socketRef = useRef(null);
     const textareaRef = useRef(null);
+    const lastProgressUpdate = useRef(0);
 
     useEffect(() => {
         setIsMounted(true);
@@ -87,11 +88,7 @@ function App() {
             });
 
             socketRef.current.on('room_joined', (data) => {
-                if (data.room_active) {
-                    setConnected(true);
-                } else {
-                    setConnected(false);
-                }
+                setConnected(data.room_active);
             });
 
             socketRef.current.on('room_status', (data) => {
@@ -107,17 +104,20 @@ function App() {
             });
 
             socketRef.current.on('typing_progress', (data) => {
-                setTypingState(prev => {
-                    const newProgress = data.index;
-                    const isDone = newProgress >= data.total;
-                    return {
+                const now = Date.now();
+                const isDone = data.index >= data.total;
+                
+                // Throttle React state updates to prevent the UI from freezing
+                if (now - lastProgressUpdate.current > 100 || isDone) {
+                    lastProgressUpdate.current = now;
+                    setTypingState(prev => ({
                         ...prev,
-                        progress: newProgress,
+                        progress: data.index,
                         total: data.total,
                         active: !isDone,
                         paused: isDone ? false : prev.paused
-                    };
-                });
+                    }));
+                }
             });
 
         } catch (error) {
@@ -127,24 +127,25 @@ function App() {
     };
 
     const sendText = () => {
-        if (!text || !socketRef.current) return;
+        const textToTransmit = textRef.current;
+        if (!textToTransmit || !socketRef.current) return;
 
         if (typingMode === 'type') {
             socketRef.current.emit('typing_command', {
                 action: 'start',
                 code: roomCode,
-                text: text,
+                text: textToTransmit,
                 speed: 1 / currentCPS
             });
             setTypingState({
                 active: true,
                 paused: false,
                 progress: 0,
-                total: text.length
+                total: textToTransmit.length
             });
         } else {
             const data = {
-                text: text,
+                text: textToTransmit,
                 timestamp: new Date().toISOString(),
                 code: roomCode
             };
@@ -153,11 +154,14 @@ function App() {
 
         setIsSent(true);
         if (typingMode === 'paste') {
-            setText('');
-            if (textareaRef.current) textareaRef.current.focus();
+            textRef.current = '';
+            if (textareaRef.current) {
+                textareaRef.current.value = '';
+                textareaRef.current.focus();
+            }
         }
 
-        setTimeout(() => setIsSent(false), 1000);
+        setTimeout(() => setIsSent(false), 500);
     };
 
     const controlTyping = (action) => {
@@ -168,7 +172,8 @@ function App() {
         if (action === 'play') setTypingState(prev => ({ ...prev, paused: false }));
         if (action === 'stop') {
             setTypingState(prev => ({ ...prev, active: false }));
-            setText('');
+            textRef.current = '';
+            if (textareaRef.current) textareaRef.current.value = '';
         }
     };
 
@@ -259,9 +264,9 @@ function App() {
                                 <textarea
                                     ref={textareaRef}
                                     className="main-textarea"
-                                    placeholder="Enter your text here to transmit securely..."
-                                    value={text}
-                                    onChange={(e) => setText(e.target.value)}
+                                    placeholder="Enter your text here to transmit securely... (Optimized for ultra-fast performance)"
+                                    defaultValue={textRef.current}
+                                    onChange={(e) => { textRef.current = e.target.value; }}
                                 />
                                 
                                 {typingMode === 'type' && (
@@ -285,7 +290,7 @@ function App() {
                                 <button
                                     className={`btn-primary ${isSent ? 'btn-success' : ''}`}
                                     onClick={sendText}
-                                    disabled={!connected || !text}
+                                    disabled={!connected}
                                 >
                                     {isSent ? 'Transmitting...' : (typingMode === 'paste' ? 'Send to Clipboard' : 'Start Auto-Typing')}
                                 </button>
