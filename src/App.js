@@ -109,7 +109,9 @@ function App() {
 
     // Typing Controls State
     const [typingMode, setTypingMode] = useState('paste'); // 'paste' or 'type'
-    const [typingSpeed, setTypingSpeed] = useState(20); // characters per second
+    const speedOptions = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 5000];
+    const [typingSpeedIndex, setTypingSpeedIndex] = useState(5); // Default to 50 CPS
+    const currentCPS = speedOptions[typingSpeedIndex];
     const [typingState, setTypingState] = useState({
         active: false,
         paused: false,
@@ -215,7 +217,7 @@ function App() {
                 action: 'start',
                 code: roomCode,
                 text: text,
-                speed: 1 / typingSpeed
+                speed: 1 / currentCPS
             });
             setTypingState({
                 active: true,
@@ -255,10 +257,10 @@ function App() {
     };
 
     const handleSpeedChange = (e) => {
-        const val = parseFloat(e.target.value);
-        setTypingSpeed(val);
+        const idx = parseInt(e.target.value);
+        setTypingSpeedIndex(idx);
         if (typingState.active) {
-            socketRef.current.emit('typing_command', { action: 'speed', code: roomCode, speed: 1 / val });
+            socketRef.current.emit('typing_command', { action: 'speed', code: roomCode, speed: 1 / speedOptions[idx] });
         }
     };
 
@@ -410,19 +412,19 @@ function App() {
                             
                             {typingMode === 'type' && (
                                 <div style={{marginTop: '10px', marginBottom: '10px'}}>
-                                    <label style={{display: 'block', fontSize: '14px', marginBottom: '5px'}}>Typing Speed: {typingSpeed >= 5000 ? 'MAX' : typingSpeed} chars / sec</label>
+                                    <label style={{display: 'block', fontSize: '14px', marginBottom: '5px'}}>Typing Speed: {currentCPS >= 5000 ? 'MAX' : currentCPS} chars / sec</label>
                                     <input 
                                         type="range" 
-                                        min="10" 
-                                        max="5000" 
-                                        step="50" 
-                                        value={typingSpeed} 
+                                        min="0" 
+                                        max="10" 
+                                        step="1" 
+                                        value={typingSpeedIndex} 
                                         onChange={handleSpeedChange}
                                         style={{width: '100%'}}
                                     />
                                     <div style={{display:'flex', justifyContent:'space-between', fontSize:'12px', color:'#666'}}>
-                                        <span>Slow</span>
-                                        <span>Fast</span>
+                                        <span>Ultra Slow</span>
+                                        <span>Ultra Fast</span>
                                     </div>
                                 </div>
                             )}
@@ -454,19 +456,19 @@ function App() {
                                 <button onClick={() => controlTyping('stop')} style={{flex: 1, padding: '15px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', fontSize:'18px'}}>⏹️ Stop</button>
                             </div>
 
-                            <label style={{display: 'block', fontSize: '14px', marginBottom: '5px'}}>Adjust Speed: {typingSpeed >= 5000 ? 'MAX' : typingSpeed} chars / sec</label>
+                            <label style={{display: 'block', fontSize: '14px', marginBottom: '5px'}}>Adjust Speed: {currentCPS >= 5000 ? 'MAX' : currentCPS} chars / sec</label>
                             <input 
                                 type="range" 
-                                min="10" 
-                                max="5000" 
-                                step="50" 
-                                value={typingSpeed} 
+                                min="0" 
+                                max="10" 
+                                step="1" 
+                                value={typingSpeedIndex} 
                                 onChange={handleSpeedChange}
                                 style={{width: '100%'}}
                             />
                             <div style={{display:'flex', justifyContent:'space-between', fontSize:'12px', color:'#666'}}>
-                                <span>Slow</span>
-                                <span>Fast</span>
+                                <span>Ultra Slow</span>
+                                <span>Ultra Fast</span>
                             </div>
                         </div>
                     )}
