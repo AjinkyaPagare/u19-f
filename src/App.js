@@ -410,12 +410,12 @@ function App() {
                             
                             {typingMode === 'type' && (
                                 <div style={{marginTop: '10px', marginBottom: '10px'}}>
-                                    <label style={{display: 'block', fontSize: '14px', marginBottom: '5px'}}>Typing Speed: {typingSpeed >= 1000 ? 'MAX' : typingSpeed} chars / sec</label>
+                                    <label style={{display: 'block', fontSize: '14px', marginBottom: '5px'}}>Typing Speed: {typingSpeed >= 5000 ? 'MAX' : typingSpeed} chars / sec</label>
                                     <input 
                                         type="range" 
                                         min="10" 
-                                        max="1000" 
-                                        step="10" 
+                                        max="5000" 
+                                        step="50" 
                                         value={typingSpeed} 
                                         onChange={handleSpeedChange}
                                         style={{width: '100%'}}
@@ -454,12 +454,12 @@ function App() {
                                 <button onClick={() => controlTyping('stop')} style={{flex: 1, padding: '15px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', fontSize:'18px'}}>⏹️ Stop</button>
                             </div>
 
-                            <label style={{display: 'block', fontSize: '14px', marginBottom: '5px'}}>Adjust Speed: {typingSpeed >= 1000 ? 'MAX' : typingSpeed} chars / sec</label>
+                            <label style={{display: 'block', fontSize: '14px', marginBottom: '5px'}}>Adjust Speed: {typingSpeed >= 5000 ? 'MAX' : typingSpeed} chars / sec</label>
                             <input 
                                 type="range" 
                                 min="10" 
-                                max="1000" 
-                                step="10" 
+                                max="5000" 
+                                step="50" 
                                 value={typingSpeed} 
                                 onChange={handleSpeedChange}
                                 style={{width: '100%'}}
