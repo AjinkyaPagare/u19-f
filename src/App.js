@@ -5,7 +5,7 @@ import './App.css';
 
 function App() {
     const [isMounted, setIsMounted] = useState(false);
-    const backendUrl = 'https://u19-b-production.up.railway.app';
+    const backendUrl = 'https://ajinkyapagare-u19-secure-backend.hf.space';
     
     // V4 Architecture: Read routing code and encryption key securely from the Air-Gapped QR URL
     const urlParams = new URLSearchParams(window.location.search);
