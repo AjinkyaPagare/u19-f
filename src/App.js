@@ -201,9 +201,7 @@ function App() {
         }
     };
 
-    const resetRoom = () => {
-        alert("For Air-Gapped Security, manual room creation is disabled. Please scan the QR code on your Desktop App.");
-    };
+
 
     if (!isMounted) return <div className="loading-screen">Initializing Secure Connection...</div>;
     
