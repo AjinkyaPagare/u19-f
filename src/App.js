@@ -107,6 +107,12 @@ function App() {
                 const now = Date.now();
                 const isDone = data.index >= data.total;
                 
+                // Auto-clear the text area when the live typing transmission completes
+                if (isDone) {
+                    textRef.current = '';
+                    if (textareaRef.current) textareaRef.current.value = '';
+                }
+                
                 // Throttle React state updates to prevent the UI from freezing
                 if (now - lastProgressUpdate.current > 100 || isDone) {
                     lastProgressUpdate.current = now;
@@ -261,6 +267,21 @@ function App() {
 
                         {!typingState.active ? (
                             <div className="input-section">
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+                                    <button 
+                                        onClick={() => {
+                                            textRef.current = '';
+                                            if (textareaRef.current) {
+                                                textareaRef.current.value = '';
+                                                textareaRef.current.focus();
+                                            }
+                                        }}
+                                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}
+                                        title="Clear all text from the box"
+                                    >
+                                        Clear Text
+                                    </button>
+                                </div>
                                 <textarea
                                     ref={textareaRef}
                                     className="main-textarea"
