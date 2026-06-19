@@ -21,9 +21,19 @@ function App() {
     });
 
     const [connected, setConnected] = useState(false);
+    const [currentView, setCurrentView] = useState('home'); // 'home' or 'tools'
     const [text, setText] = useState('');
     const [isSent, setIsSent] = useState(false);
     const [showPrivacy, setShowPrivacy] = useState(false);
+
+    // Auto-switch to tools view when connection is established, auto-switch to home when disconnected
+    useEffect(() => {
+        if (connected) {
+            setCurrentView('tools');
+        } else {
+            setCurrentView('home');
+        }
+    }, [connected]);
 
     // Typing Controls State
     const [typingMode, setTypingMode] = useState('paste'); // 'paste' or 'type'
@@ -183,9 +193,9 @@ function App() {
             <nav className="navbar">
                 <div 
                     className="navbar-brand" 
-                    onClick={resetRoom}
+                    onClick={() => setCurrentView('home')}
                     style={{ cursor: 'pointer' }}
-                    title="Click to Disconnect & Get New Room"
+                    title="Go to Home Screen"
                 >
                     U19<span className="brand-dot">.</span>
                 </div>
@@ -196,7 +206,7 @@ function App() {
             </nav>
 
             <main className="main-content">
-                {!connected ? (
+                {currentView === 'home' ? (
                     <div className="room-card">
                         <p className="room-label">SECURE ROOM CODE</p>
                         <h1 className="room-code">{roomCode}</h1>
@@ -216,6 +226,15 @@ function App() {
                             <button className="btn-secondary btn-outline" onClick={resetRoom}>
                                 New Room
                             </button>
+                            {connected && (
+                                <button 
+                                    className="btn-primary" 
+                                    onClick={() => setCurrentView('tools')}
+                                    style={{ marginTop: '12px' }}
+                                >
+                                    Open Transmission Tools
+                                </button>
+                            )}
                         </div>
                     </div>
                 ) : (
