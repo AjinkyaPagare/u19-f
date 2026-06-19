@@ -118,7 +118,7 @@ function App() {
                 reconnectionDelayMax: 5000,
                 timeout: 20000,
                 autoConnect: true,
-                transports: ['websocket', 'polling']
+                transports: ['websocket']
             });
 
             socketRef.current.on('connect', () => {
