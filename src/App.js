@@ -21,7 +21,6 @@ function App() {
     });
 
     const [connected, setConnected] = useState(false);
-    const [isWaiting, setIsWaiting] = useState(true);
     const [text, setText] = useState('');
     const [isSent, setIsSent] = useState(false);
     const [showPrivacy, setShowPrivacy] = useState(false);
@@ -80,20 +79,16 @@ function App() {
             socketRef.current.on('room_joined', (data) => {
                 if (data.room_active) {
                     setConnected(true);
-                    setIsWaiting(false);
                 } else {
                     setConnected(false);
-                    setIsWaiting(true);
                 }
             });
 
             socketRef.current.on('room_status', (data) => {
                 if (data.status === 'active') {
                     setConnected(true);
-                    setIsWaiting(false);
                 } else if (data.status === 'sender_left' || data.status === 'receiver_left') {
                     setConnected(false);
-                    setIsWaiting(true);
                 }
             });
 
