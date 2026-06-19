@@ -74,8 +74,7 @@ function App() {
                 reconnectionDelay: 1000,
                 reconnectionDelayMax: 5000,
                 timeout: 10000,
-                autoConnect: true,
-                transports: ['websocket']
+                autoConnect: true
             });
 
             socketRef.current.on('connect', () => {
