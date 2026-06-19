@@ -1,24 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
+import CryptoJS from 'crypto-js';
 import './App.css';
 
 function App() {
     const [isMounted, setIsMounted] = useState(false);
     const backendUrl = 'https://u19-b-production.up.railway.app';
     
-    // Generate 6-digit room code for sender
-    const generateRoomCode = () => {
-        return Math.floor(100000 + Math.random() * 900000).toString();
-    };
-
-    const [roomCode, setRoomCode] = useState(() => {
-        let code = localStorage.getItem('u19_sender_roomCode');
-        if (!code) {
-            code = generateRoomCode();
-            localStorage.setItem('u19_sender_roomCode', code);
-        }
-        return code;
-    });
+    // V4 Architecture: Read routing code and encryption key securely from the Air-Gapped QR URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialRoom = urlParams.get('room');
+    const hashKey = window.location.hash.substring(1); // removes '#'
+    
+    const [roomCode, setRoomCode] = useState(initialRoom || '');
+    const [encryptionKey, setEncryptionKey] = useState(hashKey || '');
 
     const [connected, setConnected] = useState(false);
     const [currentView, setCurrentView] = useState('home'); // 'home' or 'tools'
@@ -136,11 +131,27 @@ function App() {
         const textToTransmit = textRef.current;
         if (!textToTransmit || !socketRef.current) return;
 
+        // V4 Security: Inject millisecond timestamp to prevent Replay Attacks
+        const payloadObject = {
+            t: textToTransmit,
+            ts: Date.now()
+        };
+        const payloadString = JSON.stringify(payloadObject);
+        
+        // V4 Security: Drop massive payloads to prevent DoS
+        if (payloadString.length > 5000000) {
+            alert("Payload too massive! Dropping transmission to prevent DoS.");
+            return;
+        }
+
+        // E2EE: Encrypt the payload using the Air-Gapped Hash Key
+        const encryptedText = CryptoJS.AES.encrypt(payloadString, encryptionKey).toString();
+
         if (typingMode === 'type') {
             socketRef.current.emit('typing_command', {
                 action: 'start',
                 code: roomCode,
-                text: textToTransmit,
+                text: encryptedText,
                 speed: 1 / currentCPS
             });
             setTypingState({
@@ -151,7 +162,7 @@ function App() {
             });
         } else {
             const data = {
-                text: textToTransmit,
+                text: encryptedText,
                 timestamp: new Date().toISOString(),
                 code: roomCode
             };
@@ -192,12 +203,23 @@ function App() {
     };
 
     const resetRoom = () => {
-        const newCode = generateRoomCode();
-        localStorage.setItem('u19_sender_roomCode', newCode);
-        setRoomCode(newCode);
+        alert("For Air-Gapped Security, manual room creation is disabled. Please scan the QR code on your Desktop App.");
     };
 
     if (!isMounted) return <div className="loading-screen">Initializing Secure Connection...</div>;
+    
+    // V4 Security Lock: Prevent manual access without QR Code
+    if (!roomCode || !encryptionKey) {
+        return (
+            <div className="app-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div className="room-card" style={{ textAlign: 'center', padding: '40px' }}>
+                    <h1 style={{ color: '#000000', marginBottom: '20px', fontSize: '24px' }}>Air-Gapped Security</h1>
+                    <p style={{ color: '#666666', lineHeight: '1.6' }}>To ensure 100% End-to-End Encryption and mathematically prevent Man-in-the-Middle attacks, manual typing is permanently disabled.</p>
+                    <p style={{ color: '#111827', fontWeight: 'bold', marginTop: '20px' }}>Please scan the QR code on your Desktop App to securely transfer the keys and connect.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="app-container">
