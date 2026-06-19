@@ -12,7 +12,7 @@ function App() {
 
     // Safety check for mounting
     const [text, setText] = useState('');
-    const backendUrl = 'https://web-production-0e636.up.railway.app';
+    const backendUrl = 'https://u19-b-production.up.railway.app';
 
     // Sender: generates room code
     const [roomCode, setRoomCode] = useState('');
