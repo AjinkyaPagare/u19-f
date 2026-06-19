@@ -12,8 +12,8 @@ function App() {
     const initialRoom = urlParams.get('room');
     const hashKey = window.location.hash.substring(1); // removes '#'
     
-    const [roomCode, setRoomCode] = useState(initialRoom || '');
-    const [encryptionKey, setEncryptionKey] = useState(hashKey || '');
+    const roomCode = initialRoom || '';
+    const encryptionKey = hashKey || '';
 
     const [connected, setConnected] = useState(false);
     const [currentView, setCurrentView] = useState('home'); // 'home' or 'tools'
