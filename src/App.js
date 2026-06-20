@@ -146,18 +146,20 @@ function App() {
         // E2EE: Encrypt the payload using the Air-Gapped Hash Key
         const encryptedText = CryptoJS.AES.encrypt(payloadString, encryptionKey).toString();
 
-        if (typingMode === 'type') {
+        if (typingMode === 'type' || typingMode === 'human') {
             socketRef.current.emit('typing_command', {
                 action: 'start',
                 code: roomCode,
                 text: encryptedText,
-                speed: 1 / currentCPS
+                speed: typingMode === 'human' ? -1 : 1 / currentCPS,
+                mode: typingMode
             });
             setTypingState({
                 active: true,
                 paused: false,
                 progress: 0,
-                total: textToTransmit.length
+                total: textToTransmit.length,
+                mode: typingMode
             });
         } else {
             const data = {
@@ -257,6 +259,12 @@ function App() {
                             >
                                 Live Auto-Type
                             </button>
+                            <button 
+                                className={`toggle-btn ${typingMode === 'human' ? 'active' : ''}`}
+                                onClick={() => setTypingMode('human')}
+                            >
+                                Human Typing
+                            </button>
                         </div>
 
                         {!typingState.active ? (
@@ -307,7 +315,7 @@ function App() {
                                     onClick={sendText}
                                     disabled={!connected}
                                 >
-                                    {isSent ? 'Transmitting...' : (typingMode === 'paste' ? 'Send to Clipboard' : 'Start Auto-Typing')}
+                                    {isSent ? 'Transmitting...' : (typingMode === 'paste' ? 'Send to Clipboard' : (typingMode === 'human' ? 'Start Human Typing' : 'Start Auto-Typing'))}
                                 </button>
                             </div>
                         ) : (
@@ -340,21 +348,23 @@ function App() {
                                     </button>
                                 </div>
 
-                                <div className="speed-controller mt-4">
-                                    <div className="speed-header">
-                                        <label>Live Speed Adjustment</label>
-                                        <span className="speed-value">{currentCPS >= 5000 ? 'MAX' : currentCPS} CPS</span>
+                                {typingState.mode === 'type' && (
+                                    <div className="speed-controller mt-4">
+                                        <div className="speed-header">
+                                            <label>Live Speed Adjustment</label>
+                                            <span className="speed-value">{currentCPS >= 5000 ? 'MAX' : currentCPS} CPS</span>
+                                        </div>
+                                        <input 
+                                            type="range" 
+                                            min="0" 
+                                            max="10" 
+                                            step="1" 
+                                            value={typingSpeedIndex} 
+                                            onChange={handleSpeedChange}
+                                            className="modern-slider"
+                                        />
                                     </div>
-                                    <input 
-                                        type="range" 
-                                        min="0" 
-                                        max="10" 
-                                        step="1" 
-                                        value={typingSpeedIndex} 
-                                        onChange={handleSpeedChange}
-                                        className="modern-slider"
-                                    />
-                                </div>
+                                )}
                             </div>
                         )}
                     </div>
